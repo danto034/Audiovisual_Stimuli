@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Video Response Study</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <main id="app" aria-live="polite">
+      <section id="setup-screen" class="screen setup-screen">
+        <div class="card setup-card">
+          <p class="eyebrow">Research session</p>
+          <h1>Video Response Study</h1>
+          <p class="intro">
+            First, you will complete two baseline response scales. You will then
+            watch four short videos and answer the same scales after each video.
+          </p>
+          <div class="protocol-summary" aria-label="Study sequence">
+            <span>Complete baseline scales</span>
+            <span aria-hidden="true">→</span>
+            <span>Watch and rate 4 videos</span>
+            <span aria-hidden="true">→</span>
+            <span>20-second audio between videos</span>
+          </div>
+          <form id="setup-form" novalidate>
+            <label for="participant-id">Participant ID</label>
+            <input
+              id="participant-id"
+              name="participant-id"
+              type="text"
+              maxlength="64"
+              pattern="[A-Za-z0-9][A-Za-z0-9_.-]{0,63}"
+              autocomplete="off"
+              spellcheck="false"
+              placeholder="e.g., P001"
+              required
+            />
+            <p id="participant-error" class="field-error" role="alert"></p>
+            <label class="check-row">
+              <input id="audio-check" type="checkbox" required />
+              <span>My headphones are connected, audio is on, and I am ready to begin.</span>
+            </label>
+            <button id="start-button" class="primary-button" type="submit" disabled>
+              Loading player…
+            </button>
+          </form>
+          <p class="setup-note">
+            Please use headphones, remain in full-screen mode, and do not refresh the page
+            during the session.
+          </p>
+        </div>
+      </section>
+
+      <section id="ready-screen" class="screen ready-screen hidden">
+        <div class="card message-card">
+          <p class="eyebrow">Baseline complete</p>
+          <h2>You are ready to begin</h2>
+          <p>
+            Your baseline responses have been recorded. The next screen starts the
+            first video. Watch each video completely, then answer every scale.
+          </p>
+          <button id="begin-videos" class="primary-button" type="button">Start video sequence</button>
+        </div>
+      </section>
+
+      <section id="player-screen" class="screen player-screen hidden" aria-label="Video playback">
+        <div id="youtube-player"></div>
+        <div id="player-shield" aria-hidden="true"></div>
+        <div id="loading-overlay" class="loading-overlay">
+          <div class="spinner" aria-hidden="true"></div>
+          <p id="loading-message">Preparing video…</p>
+        </div>
+      </section>
+
+      <section id="rating-screen" class="screen rating-screen hidden">
+        <div class="rating-card">
+          <div class="rating-topline">
+            <span id="rating-progress">Question 1 of 2</span>
+            <span id="rating-status" class="required-badge">Response required</span>
+          </div>
+          <p id="rating-eyebrow" class="eyebrow">Pre-video baseline</p>
+          <h2 id="rating-title" class="visually-hidden">Pleasure</h2>
+          <p id="rating-instruction" class="rating-instruction">
+            Select a number to continue. A response is required.
+          </p>
+          <img id="scale-image" class="scale-image" src="" alt="" />
+          <div id="rating-buttons" class="rating-buttons" role="group" aria-label="Rating from 1 to 9"></div>
+          <p class="keyboard-hint">Click a number or press a key from 1 to 9.</p>
+        </div>
+      </section>
+
+      <section id="error-screen" class="screen error-screen hidden">
+        <div class="card message-card">
+          <p class="eyebrow">Playback paused</p>
+          <h2>We could not play this video</h2>
+          <p id="playback-error-message">
+            Check the internet connection, then retry. The experiment will not continue
+            until the video can be played in full.
+          </p>
+          <button id="retry-video" class="primary-button" type="button">Retry video</button>
+        </div>
+      </section>
+
+      <section id="complete-screen" class="screen complete-screen hidden">
+        <div class="card message-card">
+          <p class="eyebrow">Session complete</p>
+          <h2 id="complete-title">Saving responses…</h2>
+          <p id="complete-message">Please wait while the Excel workbook is created.</p>
+          <section id="results-chart-panel" class="results-chart hidden" aria-labelledby="chart-heading">
+            <h3 id="chart-heading">Responses across timepoints</h3>
+            <svg
+              id="response-chart"
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 900 470"
+              role="img"
+              aria-label="Line graph of pleasure and arousal ratings from baseline through video four"
+            ></svg>
+            <div class="chart-actions">
+              <button id="download-graph" class="secondary-button" type="button">
+                Download graph (PNG)
+              </button>
+            </div>
+          </section>
+          <a id="download-button" class="primary-button link-button hidden" href="#">
+            Download Excel file
+          </a>
+          <button id="retry-save" class="secondary-button hidden" type="button">Try saving again</button>
+          <p id="saved-location" class="saved-location"></p>
+        </div>
+      </section>
+    </main>
+
+    <script src="/app.js" defer></script>
+  </body>
+</html>
