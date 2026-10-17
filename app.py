@@ -39,6 +39,7 @@ CHECKPOINT_ROOT = RESULTS_ROOT / "checkpoints"
 HOST = "127.0.0.1"
 DEFAULT_PORT = 8787
 MAX_BODY_BYTES = 1_000_000
+APP_VERSION = "2026.10.17.3"
 
 NOISE_SECONDS = 20
 NOISE_START_SECONDS = 60
@@ -53,6 +54,7 @@ VIDEOS = [
         "title": "Sad Cinematic Emotional Intro background music 30 second [No Copyright]",
         "youtube_id": "BnKb4HzaAiM",
         "url": "https://www.youtube.com/watch?v=BnKb4HzaAiM",
+        "end_seconds": 26,
     },
     {
         "title": '"Dreams Without Goals Are Just Dreams" | Denzel Washington Motivational Speech',
@@ -103,6 +105,7 @@ def utc_now_iso() -> str:
 
 def public_config() -> dict[str, Any]:
     return {
+        "app_version": APP_VERSION,
         "videos": VIDEOS,
         "noise_video": NOISE_VIDEO,
         "noise_seconds": NOISE_SECONDS,
@@ -474,6 +477,7 @@ def build_participant_workbook(data: dict[str, Any], path: Path) -> None:
         ("Experiment finished (UTC)", data["finished_at"]),
         ("Export created (UTC)", utc_now_iso()),
         ("Video sequence", "Fixed; 1 through 4"),
+        ("Video 2 playback window", "0:00 through 0:26; remaining content omitted"),
         ("Pre-video baseline", "Pleasure and arousal; responses are recorded"),
         ("Scale advancement rule", "A response is required; there is no auto-advance"),
         ("White-noise interval after videos 1-3 (seconds)", NOISE_SECONDS),
@@ -679,6 +683,7 @@ class ExperimentHandler(SimpleHTTPRequestHandler):
                 return
             self.send_json(HTTPStatus.NOT_FOUND, {"ok": False, "error": "Not found"})
         except ValueError as exc:
+            print(f"Request rejected on {route}: {exc}")
             self.send_json(HTTPStatus.BAD_REQUEST, {"ok": False, "error": str(exc)})
         except Exception as exc:  # Keep the experiment page alive and report a useful error.
             print(f"Save error: {exc!r}")

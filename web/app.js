@@ -1,5 +1,7 @@
 "use strict";
 
+const EXPECTED_APP_VERSION = "2026.10.17.3";
+
 const elements = {
   setup: document.querySelector("#setup-screen"),
   setupForm: document.querySelector("#setup-form"),
@@ -44,6 +46,8 @@ let dimensionStartedAt = 0;
 let noiseMonitorId = null;
 let noiseStartedAt = null;
 let advanceLocked = false;
+let saveInProgress = false;
+let startupFailed = false;
 
 const experiment = {
   participant_id: "",
@@ -78,24 +82,47 @@ function setLoading(visible, message = "Preparing video…") {
 }
 
 function updateStartState() {
+  if (startupFailed) {
+    elements.startButton.disabled = true;
+    elements.startButton.textContent = "Application could not start";
+    return;
+  }
   const ready = Boolean(config && playerReady);
   elements.startButton.disabled = !ready;
   elements.startButton.textContent = ready ? "Begin baseline scales" : "Loading player…";
 }
 
+function verifyServerVersion(serverConfig) {
+  if (serverConfig.app_version === EXPECTED_APP_VERSION) return;
+  const error = new Error(
+    "The browser interface and Python server are from different application versions",
+  );
+  error.requiresRestart = true;
+  throw error;
+}
+
+async function fetchServerConfig() {
+  const response = await fetch("/api/config", { cache: "no-store" });
+  if (!response.ok) throw new Error("Could not contact the Python server");
+  const serverConfig = await response.json();
+  verifyServerVersion(serverConfig);
+  return serverConfig;
+}
+
 async function loadConfig() {
   try {
-    const response = await fetch("/api/config", { cache: "no-store" });
-    if (!response.ok) throw new Error("Could not load experiment settings");
-    config = await response.json();
+    config = await fetchServerConfig();
     config.dimensions.forEach((dimension) => {
       const image = new Image();
       image.src = dimension.image;
     });
     updateStartState();
   } catch (error) {
+    startupFailed = true;
     elements.startButton.textContent = "Application could not start";
-    elements.participantError.textContent = `${error.message}. Restart the Python application.`;
+    elements.participantError.textContent = error.requiresRestart
+      ? `${error.message}. Stop the old server with Ctrl+C, run python app.py again, and refresh this page.`
+      : `${error.message}. Restart the Python application.`;
   }
 }
 
@@ -178,7 +205,10 @@ function playStimulus(index) {
   advanceLocked = false;
   showScreen(elements.playerScreen);
   setLoading(true, `Preparing video ${index + 1} of ${config.videos.length}…`);
-  player.loadVideoById({ videoId: config.videos[index].youtube_id, startSeconds: 0 });
+  const video = config.videos[index];
+  const playbackOptions = { videoId: video.youtube_id, startSeconds: 0 };
+  if (Number.isFinite(video.end_seconds)) playbackOptions.endSeconds = video.end_seconds;
+  player.loadVideoById(playbackOptions);
 }
 
 function handlePlayerState(event) {
@@ -334,11 +364,15 @@ function advanceDimension() {
 
 async function checkpoint() {
   try {
-    await fetch("/api/checkpoint", {
+    const response = await fetch("/api/checkpoint", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(experiment),
     });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(result.error || `Checkpoint request failed with status ${response.status}`);
+    }
   } catch (error) {
     console.warn("Checkpoint could not be saved", error);
   }
@@ -381,7 +415,12 @@ async function finishExperiment() {
   mode = "saving";
   experiment.finished_at = new Date().toISOString();
   showScreen(elements.complete);
-  renderResultsChart();
+  try {
+    renderResultsChart();
+  } catch (error) {
+    console.error("The response graph could not be displayed", error);
+    elements.resultsChartPanel.classList.add("hidden");
+  }
   elements.completeTitle.textContent = "Saving responses…";
   elements.completeMessage.textContent = "Please wait while the Excel workbook is created.";
   elements.downloadButton.classList.add("hidden");
@@ -612,14 +651,22 @@ function downloadGraphAsPng() {
 elements.downloadGraph.addEventListener("click", downloadGraphAsPng);
 
 async function saveResults() {
+  if (saveInProgress) return;
+  saveInProgress = true;
+  elements.retrySave.disabled = true;
   try {
+    await fetchServerConfig();
     const response = await fetch("/api/finish", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(experiment),
     });
-    const result = await response.json();
-    if (!response.ok || !result.ok) throw new Error(result.error || "The workbook could not be saved");
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok || !result.ok) {
+      const error = new Error(result.error || `The save request failed with status ${response.status}`);
+      error.status = response.status;
+      throw error;
+    }
 
     mode = "complete";
     elements.completeTitle.textContent = "Responses saved";
@@ -633,8 +680,17 @@ async function saveResults() {
   } catch (error) {
     mode = "save_error";
     elements.completeTitle.textContent = "Responses are ready but not yet saved";
-    elements.completeMessage.textContent = `${error.message}. Keep this page open and try again.`;
+    if (error.requiresRestart) {
+      elements.completeMessage.textContent = `${error.message}. Keep this page open, stop the old server with Ctrl+C, run python app.py again, and then select Retry saving responses. Your responses remain available on this page.`;
+    } else if (error.status === 400) {
+      elements.completeMessage.textContent = `The server rejected the save: ${error.message}. Keep this page open, restart the Python application, and then retry. Your responses remain available on this page.`;
+    } else {
+      elements.completeMessage.textContent = `${error.message}. Keep this page open and try again; your responses remain available on this page.`;
+    }
     elements.retrySave.classList.remove("hidden");
+  } finally {
+    saveInProgress = false;
+    elements.retrySave.disabled = false;
   }
 }
 

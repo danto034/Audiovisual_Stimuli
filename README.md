@@ -13,7 +13,9 @@ The fixed sequence is:
    times are saved as the `Baseline` measurement phase.
 2. Show a ready screen so the participant explicitly starts the recorded sequence.
 3. Play the complete stimulus video. Playback controls are covered so the participant
-   cannot seek or skip through the video.
+   cannot seek or skip through the video. Matching black masks cover the top and
+   bottom player-overlay areas. Video 2 stops at 0:26, omitting everything after that
+   timestamp. Videos 1, 3, and 4 play to their natural end.
 4. Present **pleasure** and **arousal** as separate 1–9 image scales. A
    participant can click a number or press keys 1–9. The application cannot advance
    until a response is selected, so there is no automatic scale timeout.
@@ -41,6 +43,11 @@ python app.py
 The application opens `http://127.0.0.1:8787` in the default browser. Keep the
 PowerShell window open during the experiment. Press `Ctrl+C` there after the session
 to stop the server.
+
+After updating the application files, always stop any already-running Python server
+with `Ctrl+C` and start it again. The interface checks the server version before a
+session begins. If a completed save fails, keep the browser page open, restart the
+server, and use **Retry saving responses**; the responses remain in the page.
 
 If port 8787 is already in use:
 

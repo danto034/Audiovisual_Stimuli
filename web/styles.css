@@ -225,17 +225,36 @@ a:focus-visible {
   height: 100vh !important;
 }
 
+#video-header-mask,
+#video-footer-mask {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 2;
+  height: clamp(58px, 8vh, 82px);
+  background: #000;
+  pointer-events: none;
+}
+
+#video-header-mask {
+  top: 0;
+}
+
+#video-footer-mask {
+  bottom: 0;
+}
+
 #player-shield {
   position: absolute;
   inset: 0;
-  z-index: 2;
+  z-index: 3;
   cursor: none;
 }
 
 .loading-overlay {
   position: absolute;
   inset: 0;
-  z-index: 3;
+  z-index: 4;
   display: grid;
   place-content: center;
   justify-items: center;

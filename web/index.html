@@ -66,6 +66,8 @@
 
       <section id="player-screen" class="screen player-screen hidden" aria-label="Video playback">
         <div id="youtube-player"></div>
+        <div id="video-header-mask" aria-hidden="true"></div>
+        <div id="video-footer-mask" aria-hidden="true"></div>
         <div id="player-shield" aria-hidden="true"></div>
         <div id="loading-overlay" class="loading-overlay">
           <div class="spinner" aria-hidden="true"></div>
@@ -125,7 +127,9 @@
           <a id="download-button" class="primary-button link-button hidden" href="#">
             Download Excel file
           </a>
-          <button id="retry-save" class="secondary-button hidden" type="button">Try saving again</button>
+          <button id="retry-save" class="secondary-button hidden" type="button">
+            Retry saving responses
+          </button>
           <p id="saved-location" class="saved-location"></p>
         </div>
       </section>
